@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "PrologueGenerator": {
+      "commandName": "Project",
+      "commandLineArgs": "PostgreSqlDatabasePrologue.sql.handlebars data.json"
+    }
+  }
+}

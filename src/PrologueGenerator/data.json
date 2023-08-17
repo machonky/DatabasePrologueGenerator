@@ -1,0 +1,13 @@
+﻿{
+  "dbName": "test_app_db",
+  "readonlyRoleName": "test_app_ro_role",
+  "readWriteRoleName": "test_app_rw_role",
+  "dbSchemas": [
+    { "schemaName": "auth" },
+    { "schemaName": "test_app" }
+  ],
+  "applicationUserRo": "test_app_ro",
+  "applicationPwdRo": "bogusRoPwd",
+  "applicationUserRw": "test_app_rw",
+  "applicationPwdRw": "bogusRwPwd"
+}

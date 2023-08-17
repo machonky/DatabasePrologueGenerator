@@ -1,0 +1,51 @@
+﻿-- run as user postgres
+-- Remove public access to the database
+REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+REVOKE ALL ON DATABASE {{dbName}} FROM PUBLIC;
+
+{{#each dbSchemas}}
+CREATE SCHEMA {{schemaName}};
+{{/each}}
+
+-- Create a read-only role and grant permissions on that role to specific schemas
+CREATE ROLE {{readonlyRoleName}};
+{{#dbSchemas}}
+GRANT USAGE ON SCHEMA {{schemaName}} TO {{../readonlyRoleName}};
+{{/dbSchemas}}
+
+-- allow existing tables in the specified schemas to be readable
+{{#dbSchemas}}
+GRANT SELECT ON ALL TABLES IN SCHEMA {{schemaName}} TO {{../readonlyRoleName}};
+{{/dbSchemas}}
+
+-- allow new future tables in specified schemas to be readable
+{{#dbSchemas}}
+ALTER DEFAULT PRIVILEGES IN SCHEMA {{schemaName}} GRANT SELECT ON TABLES TO {{../readonlyRoleName}};
+{{/dbSchemas}}
+
+-- Read-Write role
+CREATE ROLE {{readWriteRoleName}};
+GRANT CONNECT ON DATABASE {{dbName}} TO {{readWriteRoleName}};
+{{#dbSchemas}}
+GRANT CREATE, USAGE ON SCHEMA {{schemaName}} TO {{../readWriteRoleName}};
+{{/dbSchemas}}
+
+-- existing tables
+{{#dbSchemas}}
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA {{schemaName}} TO {{../readWriteRoleName}};
+{{/dbSchemas}}
+
+-- future tables in existing schemas
+{{#dbSchemas}}
+ALTER DEFAULT PRIVILEGES IN SCHEMA {{schemaName}} GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {{../readWriteRoleName}};
+ALTER DEFAULT PRIVILEGES IN SCHEMA {{schemaName}} GRANT USAGE ON SEQUENCES TO {{../readWriteRoleName}};
+{{/dbSchemas}}
+
+-- Finally create a user w. RO rights
+CREATE USER {{applicationUserRo}} WITH ENCRYPTED PASSWORD '{{{applicationPwdRo}}}';
+GRANT {{readonlyRoleName}} TO {{applicationUserRo}};
+
+-- Finally create a user w. RW rights
+CREATE USER {{applicationUserRw}} WITH ENCRYPTED PASSWORD '{{{applicationPwdRw}}}';
+GRANT {{readWriteRoleName}} TO {{applicationUserRw}};
+
