@@ -68,10 +68,35 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {{schemaName}} GRANT USAGE ON SEQUENCES TO {{
 {{/dbSchemas}}
 
 -- Finally create a user w. RO rights
-CREATE USER {{applicationUserRo}} WITH ENCRYPTED PASSWORD '{{{applicationPwdRo}}}';
-GRANT {{readonlyRoleName}} TO {{applicationUserRo}};
+DO
+$do$
+BEGIN
+   IF EXISTS (
+      SELECT FROM pg_catalog.pg_user
+      WHERE  usename = '{{applicationUserRo}}') THEN
+
+      RAISE NOTICE 'User "{{applicationUserRo}}" already exists. Skipping.';
+   ELSE
+      CREATE USER {{applicationUserRo}} WITH ENCRYPTED PASSWORD '{{{applicationPwdRo}}}';
+      GRANT {{readonlyRoleName}} TO {{applicationUserRo}};
+   END IF;
+END
+$do$;
 
 -- Finally create a user w. RW rights
-CREATE USER {{applicationUserRw}} WITH ENCRYPTED PASSWORD '{{{applicationPwdRw}}}';
-GRANT {{readWriteRoleName}} TO {{applicationUserRw}};
+DO
+$do$
+BEGIN
+   IF EXISTS (
+      SELECT FROM pg_catalog.pg_user
+      WHERE  usename = '{{applicationUserRw}}') THEN
+
+      RAISE NOTICE 'User "{{applicationUserRw}}" already exists. Skipping.';
+   ELSE
+      CREATE USER {{applicationUserRw}} WITH ENCRYPTED PASSWORD '{{{applicationPwdRw}}}';
+      GRANT {{readWriteRoleName}} TO {{applicationUserRw}};
+   END IF;
+END
+$do$;
+
 
