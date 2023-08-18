@@ -8,7 +8,20 @@ CREATE SCHEMA {{schemaName}};
 {{/each}}
 
 -- Create a read-only role and grant permissions on that role to specific schemas
-CREATE ROLE {{readonlyRoleName}};
+DO
+$do$
+BEGIN
+   IF EXISTS (
+      SELECT FROM pg_catalog.pg_roles
+      WHERE  rolname = '{{readonlyRoleName}}') THEN
+
+      RAISE NOTICE 'Role "{{readonlyRoleName}}" already exists. Skipping.';
+   ELSE
+      CREATE ROLE {{readonlyRoleName}};
+   END IF;
+END
+$do$;
+
 {{#dbSchemas}}
 GRANT USAGE ON SCHEMA {{schemaName}} TO {{../readonlyRoleName}};
 {{/dbSchemas}}
@@ -24,7 +37,20 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {{schemaName}} GRANT SELECT ON TABLES TO {{..
 {{/dbSchemas}}
 
 -- Read-Write role
-CREATE ROLE {{readWriteRoleName}};
+DO
+$do$
+BEGIN
+   IF EXISTS (
+      SELECT FROM pg_catalog.pg_roles
+      WHERE  rolname = '{{readWriteRoleName}}') THEN
+
+      RAISE NOTICE 'Role "{{readWriteRoleName}}" already exists. Skipping.';
+   ELSE
+      CREATE ROLE {{readWriteRoleName}};
+   END IF;
+END
+$do$;
+
 GRANT CONNECT ON DATABASE {{dbName}} TO {{readWriteRoleName}};
 {{#dbSchemas}}
 GRANT CREATE, USAGE ON SCHEMA {{schemaName}} TO {{../readWriteRoleName}};
