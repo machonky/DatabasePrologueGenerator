@@ -1,4 +1,4 @@
-﻿-- run as user postgres
+﻿-- run as user postgres - inspired by https://levelup.gitconnected.com/setting-up-users-and-permissions-in-postgres-the-right-way-9b5c288fd53b
 -- Remove public access to the database
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 REVOKE ALL ON DATABASE {{dbName}} FROM PUBLIC;
@@ -22,6 +22,7 @@ BEGIN
 END
 $do$;
 
+GRANT CONNECT ON DATABASE {{dbName}} TO {{readonlyRoleName}};
 {{#dbSchemas}}
 GRANT USAGE ON SCHEMA {{schemaName}} TO {{../readonlyRoleName}};
 {{/dbSchemas}}
@@ -67,6 +68,34 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA {{schemaName}} GRANT SELECT, INSERT, UPDATE, 
 ALTER DEFAULT PRIVILEGES IN SCHEMA {{schemaName}} GRANT USAGE ON SEQUENCES TO {{../readWriteRoleName}};
 {{/dbSchemas}}
 
+{{#if applicationDevRoleName}}
+-- EF Core requires access to the public schema - Not a good plan but whatever...
+DO
+$do$
+BEGIN
+   IF EXISTS (
+      SELECT FROM pg_catalog.pg_roles
+      WHERE  rolname = '{{applicationDevRoleName}}') THEN
+
+      RAISE NOTICE 'Role "{{applicationDevRoleName}}" already exists. Skipping.';
+   ELSE
+      CREATE ROLE {{applicationDevRoleName}};
+   END IF;
+END
+$do$;
+GRANT CONNECT ON DATABASE {{dbName}} TO {{applicationDevRoleName}};
+GRANT CREATE, USAGE ON SCHEMA public TO {{applicationDevRoleName}};
+
+-- existing tables
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO {{applicationDevRoleName}};
+
+-- future tables in existing schemas
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {{applicationDevRoleName}};
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE ON SEQUENCES TO {{applicationDevRoleName}};
+
+GRANT {{readWriteRoleName}} TO {{applicationDevRoleName}};
+{{/if}}
+
 -- Finally create a user w. RO rights
 DO
 $do$
@@ -99,4 +128,19 @@ BEGIN
 END
 $do$;
 
+{{#if applicationDevRoleName}}
+DO
+$do$
+BEGIN
+   IF EXISTS (
+      SELECT FROM pg_catalog.pg_user
+      WHERE  usename = '{{applicationDevUser}}') THEN
 
+      RAISE NOTICE 'Developer "{{applicationDevUser}}" already exists. Skipping.';
+   ELSE
+      CREATE USER {{applicationDevUser}} WITH ENCRYPTED PASSWORD '{{{applicationDevPwd}}}';
+      GRANT {{applicationDevRoleName}} TO {{applicationDevUser}};
+   END IF;
+END
+$do$;
+{{/if}}

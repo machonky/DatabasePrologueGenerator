@@ -14,11 +14,16 @@ handlebars.Configuration.UseNewtonsoftJson();
 var template = handlebars.Compile(source);
 var model = JObject.Parse(context);
 
-// Overwrite the passwords with new randomly generated ones
-var pwdSource = new PasswordGeneratorService(16, CharacterSetMask.All);
-var pwds = pwdSource.GeneratePasswords(2);
+var shouldUpdatePasswords = false;
+if (shouldUpdatePasswords)
+{
+    // Overwrite the passwords with new randomly generated ones
+    var pwdSource = new PasswordGeneratorService(16, CharacterSetMask.All);
+    var pwds = pwdSource.GeneratePasswords(3);
 
-model["applicationPwdRo"] = pwds[0];
-model["applicationPwdRw"] = pwds[1];
+    model["applicationPwdRo"] = pwds[0];
+    model["applicationPwdRw"] = pwds[1];
+    model["applicationDevPwd"] = pwds[2];
+}
 
 Console.WriteLine(template(model));
